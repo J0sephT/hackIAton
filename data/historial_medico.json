@@ -1,0 +1,153 @@
+[
+  {
+    "cedula": "1001234567",
+    "nombre": "Carlos Mendoza",
+    "edad": 45,
+    "tipo_sangre": "O+",
+    "alergias": ["penicilina"],
+    "preexistencias": [
+      {
+        "condicion": "Hipertensión arterial",
+        "diagnosticada": "2018-03-10",
+        "nivel_severidad": "moderada",
+        "en_tratamiento": true,
+        "medicacion_actual": ["Losartán 50mg"],
+        "declarada_en_poliza": true
+      },
+      {
+        "condicion": "Diabetes tipo 2",
+        "diagnosticada": "2020-07-22",
+        "nivel_severidad": "leve",
+        "en_tratamiento": true,
+        "medicacion_actual": ["Metformina 850mg"],
+        "declarada_en_poliza": true
+      }
+    ],
+    "hospitalizaciones_previas": [
+      {
+        "fecha": "2021-11-05",
+        "motivo": "Control diabetes descompensada",
+        "dias": 3,
+        "cubierto_por_seguro": true
+      }
+    ],
+    "medico_cabecera": "Dr. Fernando Arias",
+    "notas_criticas": "Paciente requiere monitoreo glucémico constante en emergencias"
+  },
+  {
+    "cedula": "1002345678",
+    "nombre": "Lucia Paredes",
+    "edad": 32,
+    "tipo_sangre": "A+",
+    "alergias": [],
+    "preexistencias": [
+      {
+        "condicion": "Asma bronquial",
+        "diagnosticada": "2010-05-14",
+        "nivel_severidad": "leve",
+        "en_tratamiento": false,
+        "medicacion_actual": ["Salbutamol (uso condicional)"],
+        "declarada_en_poliza": true
+      }
+    ],
+    "hospitalizaciones_previas": [],
+    "medico_cabecera": "Dra. Valentina Cruz",
+    "notas_criticas": null
+  },
+  {
+    "cedula": "1003456789",
+    "nombre": "Andrés Villacís",
+    "edad": 58,
+    "tipo_sangre": "B-",
+    "alergias": ["ibuprofeno", "sulfas"],
+    "preexistencias": [
+      {
+        "condicion": "Insuficiencia renal crónica estadio 3",
+        "diagnosticada": "2019-02-18",
+        "nivel_severidad": "alta",
+        "en_tratamiento": true,
+        "medicacion_actual": ["Furosemida", "Eritropoyetina"],
+        "declarada_en_poliza": false,
+        "nota": "NO DECLARADA EN PÓLIZA - riesgo de exclusión de cobertura"
+      },
+      {
+        "condicion": "Cardiopatía isquémica",
+        "diagnosticada": "2021-09-03",
+        "nivel_severidad": "alta",
+        "en_tratamiento": true,
+        "medicacion_actual": ["Aspirina 100mg", "Atorvastatina", "Bisoprolol"],
+        "declarada_en_poliza": false,
+        "nota": "NO DECLARADA EN PÓLIZA"
+      }
+    ],
+    "hospitalizaciones_previas": [
+      {
+        "fecha": "2022-04-12",
+        "motivo": "Episodio anginoso agudo",
+        "dias": 5,
+        "cubierto_por_seguro": false
+      }
+    ],
+    "medico_cabecera": "Dr. Gustavo Naranjo",
+    "notas_criticas": "ALERTA CRÍTICA: Múltiples preexistencias no declaradas con póliza vencida. Paciente de alto riesgo."
+  },
+  {
+    "cedula": "1004567890",
+    "nombre": "María Elena Suárez",
+    "edad": 41,
+    "tipo_sangre": "AB+",
+    "alergias": [],
+    "preexistencias": [],
+    "hospitalizaciones_previas": [],
+    "medico_cabecera": "Dra. Carolina Espín",
+    "notas_criticas": null
+  },
+  {
+    "cedula": "1005678901",
+    "nombre": "Roberto Cárdenas",
+    "edad": 37,
+    "tipo_sangre": "O-",
+    "alergias": ["látex"],
+    "preexistencias": [
+      {
+        "condicion": "Epilepsia focal",
+        "diagnosticada": "2015-08-30",
+        "nivel_severidad": "moderada",
+        "en_tratamiento": true,
+        "medicacion_actual": ["Levetiracetam 500mg"],
+        "declarada_en_poliza": false,
+        "nota": "NO DECLARADA - potencial cláusula de exclusión activa en la póliza"
+      }
+    ],
+    "hospitalizaciones_previas": [
+      {
+        "fecha": "2023-02-20",
+        "motivo": "Crisis convulsiva",
+        "dias": 2,
+        "cubierto_por_seguro": false
+      }
+    ],
+    "medico_cabecera": "Dr. Marco Benítez",
+    "notas_criticas": "Paciente alérgico a látex — todos los procedimientos sin látex. Preexistencia no declarada."
+  },
+  {
+    "cedula": "1006789012",
+    "nombre": "Gabriela Mora",
+    "edad": 29,
+    "tipo_sangre": "A-",
+    "alergias": [],
+    "preexistencias": [
+      {
+        "condicion": "Lupus eritematoso sistémico",
+        "diagnosticada": "2022-01-10",
+        "nivel_severidad": "moderada",
+        "en_tratamiento": true,
+        "medicacion_actual": ["Hidroxicloroquina 200mg", "Prednisona 5mg"],
+        "declarada_en_poliza": true
+      }
+    ],
+    "hospitalizaciones_previas": [],
+    "medico_cabecera": "Dra. Fernanda Hidalgo",
+    "notas_criticas": "Paciente con inmunosupresión - riesgo elevado de infecciones oportunistas"
+  }
+]
