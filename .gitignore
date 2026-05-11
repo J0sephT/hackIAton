@@ -1,0 +1,22 @@
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Variables de entorno / secretos
+.env
+
+# Caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Archivos de Mac (por si acaso)
+.DS_Store

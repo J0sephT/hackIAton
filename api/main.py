@@ -9,9 +9,11 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+import pathlib
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from rich import print as rprint
 
@@ -32,6 +34,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Servir frontend ──────────────────────────────────────────────────────────
+FRONTEND_DIR = pathlib.Path(__file__).parent.parent / "frontend"
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_frontend():
+    """Sirve la UI del demo."""
+    html_file = FRONTEND_DIR / "index.html"
+    return HTMLResponse(content=html_file.read_text(encoding="utf-8"))
 
 # ─── Cache de idempotencia (en prod iría en Redis) ─────────────────────────────
 eventos_procesados: set[str] = set()

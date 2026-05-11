@@ -1,0 +1,3 @@
+{"timestamp": "2026-05-11T11:42:13.896030", "evento_id": "SIM-8C35847E", "cedula": "1001234567", "decision": "APROBADA", "razonamiento": "Póliza vigente con cobertura activa para emergencias, monto disponible suficiente y sin preexistencias no declaradas."}
+{"timestamp": "2026-05-11T11:54:39.782907", "evento_id": "SIM-5AB145FD", "cedula": "1004567890", "decision": "RECHAZADA", "razonamiento": "La póliza está suspendida por mora y no cubre emergencias."}
+{"timestamp": "2026-05-11T11:55:32.631988", "evento_id": "SIM-DD8E56D2", "cedula": "1001234567", "decision": "APROBADA", "razonamiento": "Póliza vigente con cobertura activa para emergencias, monto disponible suficiente y sin preexistencias no declaradas."}

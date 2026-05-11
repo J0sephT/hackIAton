@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARIA — Sistema de Alerta Temprana</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #070c14;
+    --bg2:       #0d1525;
+    --bg3:       #111d30;
+    --border:    #1e2d45;
+    --text:      #c8d8f0;
+    --muted:     #4a6080;
+    --green:     #00e896;
+    --green-dim: #00391f;
+    --red:       #ff3d5a;
+    --red-dim:   #3d0010;
+    --amber:     #ffb830;
+    --amber-dim: #3d2600;
+    --blue:      #3d9eff;
+    --blue-dim:  #0a1e3d;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCANLINE OVERLAY ─────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── HEADER ───────────────────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    border: 2px solid var(--green);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    box-shadow: 0 0 12px rgba(0,232,150,0.3);
+  }
+
+  .logo-mark::before {
+    content: '+';
+    color: var(--green);
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1;
+  }
+
+  .logo-text {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: #fff;
+  }
+
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .live-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .clock {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── MAIN LAYOUT ──────────────────────────────────────── */
+  main {
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── CONTROL PANEL ────────────────────────────────────── */
+  .control-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+  }
+
+  .panel-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-label::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 1px;
+    background: var(--muted);
+  }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .field select, .field input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .field select:focus, .field input:focus {
+    border-color: var(--blue);
+  }
+
+  .field select option {
+    background: var(--bg3);
+    padding: 4px;
+  }
+
+  /* ── TRIGGER BUTTON ───────────────────────────────────── */
+  #btn-simular {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 11px 28px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #btn-simular:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,232,150,0.4); }
+  #btn-simular:active { transform: translateY(0); }
+  #btn-simular:disabled {
+    background: var(--muted);
+    color: var(--bg);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  #btn-simular .btn-spinner {
+    display: none;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 8px;
+  }
+
+  #btn-simular.loading .btn-spinner { display: inline-block; }
+  #btn-simular.loading .btn-text { display: none; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── STATUS BAR ───────────────────────────────────────── */
+  #status-bar {
+    display: none;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #status-bar.visible { display: flex; }
+
+  .status-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.3s;
+  }
+
+  .status-step .step-icon { font-size: 14px; }
+  .status-step.active { color: var(--amber); }
+  .status-step.done { color: var(--green); }
+
+  .step-divider { color: var(--border); margin: 0 4px; }
+
+  /* ── RESULTS GRID ─────────────────────────────────────── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* ── RESULT CARD ──────────────────────────────────────── */
+  .result-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.4s;
+  }
+
+  .card-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg3);
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .card-icon.hospital { background: rgba(61,158,255,0.15); }
+  .card-icon.gestor   { background: rgba(255,184,48,0.15); }
+
+  .card-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    display: none;
+  }
+
+  .card-badge.show { display: inline-block; }
+  .card-badge.APROBADA        { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+  .card-badge.RECHAZADA       { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+  .card-badge.REQUIERE_REVISION { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+  .card-badge.SIN_POLIZA      { background: #1a1a2e; color: #8888cc; border: 1px solid #8888cc; }
+
+  .card-body {
+    padding: 24px;
+    min-height: 320px;
+  }
+
+  /* ── EMPTY STATE ──────────────────────────────────────── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 260px;
+    gap: 12px;
+  }
+
+  .empty-icon {
+    width: 52px; height: 52px;
+    border: 1px dashed var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    color: var(--border);
+  }
+
+  .empty-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  /* ── LOADING STATE ────────────────────────────────────── */
+  .loading-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 260px;
+    gap: 16px;
+  }
+
+  .loading-state.visible { display: flex; }
+
+  .loader-ring {
+    width: 48px; height: 48px;
+    border: 2px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    animation: blink 1.5s infinite;
+  }
+
+  @keyframes blink { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }
+
+  /* ── DATA ROWS ────────────────────────────────────────── */
+  .data-section {
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(30,45,69,0.5);
+    gap: 16px;
+  }
+
+  .data-row:last-child { border-bottom: none; }
+
+  .data-key {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .data-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    text-align: right;
+    word-break: break-word;
+  }
+
+  .data-val.green { color: var(--green); }
+  .data-val.red   { color: var(--red); }
+  .data-val.amber { color: var(--amber); }
+  .data-val.blue  { color: var(--blue); }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .tag.alert { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+  .tag.warn  { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+  .tag.ok    { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+  /* ── INSTRUCCIONES BLOCK ──────────────────────────────── */
+  .instrucciones-block {
+    background: var(--bg3);
+    border-left: 3px solid var(--blue);
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    margin-top: 8px;
+  }
+
+  .acciones-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .acciones-list li {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .acciones-list li::before {
+    content: '→';
+    color: var(--amber);
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+
+  /* ── HISTORY ──────────────────────────────────────────── */
+  .history-section {
+    margin-top: 32px;
+  }
+
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .history-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  #btn-clear {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  #btn-clear:hover { border-color: var(--red); color: var(--red); }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 280px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .history-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .history-item:hover { border-color: var(--blue); }
+
+  .history-decision {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .history-decision.APROBADA          { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .history-decision.RECHAZADA         { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .history-decision.REQUIERE_REVISION { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .history-decision.SIN_POLIZA        { background: #8888cc; }
+
+  .history-info { font-size: 13px; }
+  .history-info .h-name { color: var(--text); font-weight: 500; }
+  .history-info .h-motivo { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .history-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .history-ms {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* ── ANIMATIONS ───────────────────────────────────────── */
+  .fade-in {
+    animation: fadeIn 0.4s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-card.active-green { border-color: var(--green); box-shadow: 0 0 20px rgba(0,232,150,0.1); }
+  .result-card.active-red   { border-color: var(--red);   box-shadow: 0 0 20px rgba(255,61,90,0.1); }
+  .result-card.active-amber { border-color: var(--amber); box-shadow: 0 0 20px rgba(255,184,48,0.1); }
+
+  /* ── RESPONSIVE ───────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .controls-grid { grid-template-columns: 1fr 1fr; }
+    #btn-simular { grid-column: span 2; }
+    .results-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div>
+      <div class="logo-text">ARIA</div>
+      <div class="logo-sub">Alerta Temprana · Emergencias</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      SISTEMA ACTIVO
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── CONTROL PANEL ──────────────────────────────────── -->
+  <div class="control-panel">
+    <div class="panel-label">Simulador de Ingreso a Emergencias</div>
+    <div class="controls-grid">
+
+      <div class="field">
+        <label>Paciente / Cédula</label>
+        <select id="sel-cedula">
+          <option value="1001234567">Carlos Mendoza — 1001234567 (Gold vigente)</option>
+          <option value="1002345678">Lucia Paredes — 1002345678 (Límite crítico)</option>
+          <option value="1003456789">Andrés Villacís — 1003456789 (Póliza vencida)</option>
+          <option value="1004567890">María Suárez — 1004567890 (Suspendida mora)</option>
+          <option value="1005678901">Roberto Cárdenas — 1005678901 (Preex. no declarada)</option>
+          <option value="1006789012">Gabriela Mora — 1006789012 (Lupus declarado)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Motivo de Ingreso</label>
+        <input type="text" id="inp-motivo" value="Dolor torácico agudo con disnea" />
+      </div>
+
+      <div class="field">
+        <label>Hospital</label>
+        <input type="text" id="inp-hospital" value="Hospital General del Norte" />
+      </div>
+
+      <button id="btn-simular" onclick="simular()">
+        <span class="btn-spinner"></span>
+        <span class="btn-text">⚡ Simular Ingreso</span>
+      </button>
+
+    </div>
+
+    <!-- Status bar -->
+    <div id="status-bar">
+      <div class="status-step" id="step-recv">
+        <span class="step-icon">📡</span> Webhook recibido
+      </div>
+      <span class="step-divider">›</span>
+      <div class="status-step" id="step-poliza">
+        <span class="step-icon">🔍</span> Validando póliza
+      </div>
+      <span class="step-divider">›</span>
+      <div class="status-step" id="step-preex">
+        <span class="step-icon">🧬</span> Revisando preexistencias
+      </div>
+      <span class="step-divider">›</span>
+      <div class="status-step" id="step-notif">
+        <span class="step-icon">📤</span> Enviando notificaciones
+      </div>
+      <span class="step-divider">›</span>
+      <div class="status-step" id="step-done">
+        <span class="step-icon">✅</span> Completado
+      </div>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)" id="timer-label"></span>
+    </div>
+
+  </div>
+
+  <!-- ── RESULTS GRID ────────────────────────────────────── -->
+  <div class="results-grid">
+
+    <!-- Panel Hospital -->
+    <div class="result-card" id="card-hospital">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon hospital">🏥</div>
+          Admisiones — Hospital
+        </div>
+        <span class="card-badge" id="badge-hospital"></span>
+      </div>
+      <div class="card-body" id="body-hospital">
+        <div class="empty-state">
+          <div class="empty-icon">🏥</div>
+          <div class="empty-text">Esperando evento de ingreso<br>Dispara la simulación para ver el resultado</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Gestor -->
+    <div class="result-card" id="card-gestor">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon gestor">📋</div>
+          Gestor de Casos — Aseguradora
+        </div>
+        <span class="card-badge" id="badge-gestor"></span>
+      </div>
+      <div class="card-body" id="body-gestor">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-text">Esperando decisión del agente<br>Se actualizará simultáneamente con admisiones</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── HISTORY ─────────────────────────────────────────── -->
+  <div class="history-section">
+    <div class="history-header">
+      <div class="history-title">— Historial de Eventos</div>
+      <button id="btn-clear" onclick="clearHistory()">Limpiar</button>
+    </div>
+    <div class="history-list" id="history-list">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:12px;text-align:center;">
+        Sin eventos procesados aún.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  const API = 'http://localhost:8000';
+  let history_items = [];
+  let poll_interval = null;
+  let timer_start = null;
+  let timer_interval = null;
+
+  // ── Clock ──────────────────────────────────────────────────
+  function updateClock() {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('es-EC', { hour12: false });
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── Simulate ───────────────────────────────────────────────
+  async function simular() {
+    const cedula   = document.getElementById('sel-cedula').value;
+    const motivo   = document.getElementById('inp-motivo').value.trim() || 'Emergencia general';
+    const hospital = document.getElementById('inp-hospital').value.trim() || 'Hospital General';
+    const btn      = document.getElementById('btn-simular');
+
+    // UI: loading
+    btn.disabled = true;
+    btn.classList.add('loading');
+
+    showLoading();
+    resetCards();
+    startTimer();
+    setStep('recv');
+
+    try {
+      const url = `${API}/simular?cedula=${encodeURIComponent(cedula)}&motivo=${encodeURIComponent(motivo)}&hospital=${encodeURIComponent(hospital)}`;
+      const res  = await fetch(url, { method: 'POST' });
+      const data = await res.json();
+
+      if (!data.evento_id) throw new Error('No se obtuvo evento_id');
+
+      const eventoId = data.evento_id;
+      setStep('poliza');
+
+      // Poll hasta completado
+      let intentos = 0;
+      poll_interval = setInterval(async () => {
+        intentos++;
+        if (intentos > 40) {
+          clearInterval(poll_interval);
+          showError('Timeout: el agente tardó demasiado.');
+          resetBtn();
+          stopTimer();
+          return;
+        }
+
+        try {
+          const r   = await fetch(`${API}/resultado/${eventoId}`);
+          const res = await r.json();
+
+          if (res.estado === 'procesando') {
+            // Avanzar pasos visualmente por tiempo transcurrido
+            const elapsed = (Date.now() - timer_start) / 1000;
+            if (elapsed > 3)  setStep('preex');
+            if (elapsed > 7)  setStep('notif');
+            return;
+          }
+
+          if (res.estado === 'error') {
+            clearInterval(poll_interval);
+            showError(`Error del agente: ${res.error}`);
+            resetBtn();
+            stopTimer();
+            return;
+          }
+
+          if (res.estado === 'completado') {
+            clearInterval(poll_interval);
+            setStep('done');
+            stopTimer();
+            renderResultados(res, cedula, motivo);
+            addHistory(res, cedula, motivo);
+            resetBtn();
+          }
+        } catch (e) {
+          console.warn('Poll error:', e);
+        }
+      }, 1500);
+
+    } catch (e) {
+      showError(`Error de conexión: ${e.message}. ¿Está corriendo python run.py?`);
+      resetBtn();
+      stopTimer();
+    }
+  }
+
+  // ── Render resultados ──────────────────────────────────────
+  function renderResultados(res, cedula, motivo) {
+    const decision = res.decision || 'REQUIERE_REVISION';
+    const mh = res.mensaje_hospital || {};
+    const mg = res.mensaje_gestor   || {};
+
+    // Actualizar badges
+    setBadge('badge-hospital', decision);
+    setBadge('badge-gestor',   decision);
+
+    // Colorear cards
+    const cardClass = decision === 'APROBADA' ? 'active-green'
+                    : decision === 'RECHAZADA' ? 'active-red' : 'active-amber';
+    document.getElementById('card-hospital').className = `result-card ${cardClass}`;
+    document.getElementById('card-gestor').className   = `result-card ${cardClass}`;
+
+    // ── Panel Hospital ──────────────────────────────────────
+    const bodyH = document.getElementById('body-hospital');
+    const montoDisp = mh.monto_disponible != null
+      ? `$${Number(mh.monto_disponible).toLocaleString()}`
+      : '—';
+    const deducible = mh.deducible_aplicable != null
+      ? `$${mh.deducible_aplicable}`
+      : '—';
+    const copago = mh.copago_porcentaje != null
+      ? `${mh.copago_porcentaje}%`
+      : '—';
+
+    const alertas = Array.isArray(mh.alertas_clinicas) ? mh.alertas_clinicas : [];
+    const preexH  = Array.isArray(mh.preexistencias_relevantes) ? mh.preexistencias_relevantes : [];
+
+    bodyH.innerHTML = `
+      <div class="fade-in">
+        <div class="data-section">
+          <div class="section-title">Cobertura</div>
+          <div class="data-row">
+            <span class="data-key">Estado póliza</span>
+            <span class="data-val ${colorDecision(decision)}">${decision.replace('_',' ')}</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Cobertura activa</span>
+            <span class="data-val ${mh.cobertura_activa ? 'green':'red'}">${mh.cobertura_activa ? 'SÍ':'NO'}</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Monto disponible</span>
+            <span class="data-val ${mh.cobertura_activa ? 'green':'red'}">${montoDisp}</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Deducible</span>
+            <span class="data-val">${deducible}</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Co-pago</span>
+            <span class="data-val">${copago}</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Contacto gestor</span>
+            <span class="data-val blue">${mh.contacto_gestor || '—'}</span>
+          </div>
+        </div>
+        ${alertas.length ? `
+        <div class="data-section">
+          <div class="section-title">⚠ Alertas Clínicas</div>
+          <div class="tag-list" style="justify-content:flex-start">
+            ${alertas.map(a => `<span class="tag alert">${a}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        ${preexH.length ? `
+        <div class="data-section">
+          <div class="section-title">Preexistencias Relevantes</div>
+          <div class="tag-list" style="justify-content:flex-start">
+            ${preexH.map(p => `<span class="tag warn">${p}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        ${mh.instrucciones ? `
+        <div class="data-section">
+          <div class="section-title">Instrucciones</div>
+          <div class="instrucciones-block">${mh.instrucciones}</div>
+        </div>` : ''}
+      </div>`;
+
+    // ── Panel Gestor ────────────────────────────────────────
+    const bodyG = document.getElementById('body-gestor');
+    const acciones = Array.isArray(mg.acciones_requeridas) ? mg.acciones_requeridas : [];
+    const preexND  = Array.isArray(mg.preexistencias_no_declaradas) ? mg.preexistencias_no_declaradas : [];
+    const riesgo   = mg.riesgo_financiero || '—';
+
+    bodyG.innerHTML = `
+      <div class="fade-in">
+        <div class="data-section">
+          <div class="section-title">Resumen Ejecutivo</div>
+          <div class="instrucciones-block" style="border-color:var(--amber)">${mg.resumen_ejecutivo || '—'}</div>
+        </div>
+        <div class="data-section">
+          <div class="section-title">Indicadores</div>
+          <div class="data-row">
+            <span class="data-key">Decisión</span>
+            <span class="data-val ${colorDecision(decision)}">${decision.replace('_',' ')}</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Riesgo financiero</span>
+            <span class="data-val ${riesgo==='ALTO'?'red':riesgo==='MEDIO'?'amber':'green'}">${riesgo}</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Tiempo procesado</span>
+            <span class="data-val green">${res.duracion_ms}ms</span>
+          </div>
+        </div>
+        ${preexND.length ? `
+        <div class="data-section">
+          <div class="section-title">🚨 Preexistencias NO Declaradas</div>
+          <div class="tag-list" style="justify-content:flex-start">
+            ${preexND.map(p => `<span class="tag alert">${p}</span>`).join('')}
+          </div>
+        </div>` : ''}
+        ${acciones.length ? `
+        <div class="data-section">
+          <div class="section-title">Acciones Requeridas</div>
+          <ul class="acciones-list">
+            ${acciones.map(a => `<li>${a}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+        ${mg.recomendacion ? `
+        <div class="data-section">
+          <div class="section-title">Recomendación</div>
+          <div class="instrucciones-block">${mg.recomendacion}</div>
+        </div>` : ''}
+      </div>`;
+  }
+
+  // ── Helpers ────────────────────────────────────────────────
+  function colorDecision(d) {
+    return d === 'APROBADA' ? 'green' : d === 'RECHAZADA' ? 'red' : 'amber';
+  }
+
+  function setBadge(id, decision) {
+    const el = document.getElementById(id);
+    el.textContent = decision.replace('_',' ');
+    el.className = `card-badge show ${decision}`;
+  }
+
+  function showLoading() {
+    const loadH = `<div class="loading-state visible"><div class="loader-ring"></div><div class="loading-text">Agente ARIA procesando...</div></div>`;
+    const loadG = `<div class="loading-state visible"><div class="loader-ring"></div><div class="loading-text">Esperando decisión...</div></div>`;
+    document.getElementById('body-hospital').innerHTML = loadH;
+    document.getElementById('body-gestor').innerHTML   = loadG;
+  }
+
+  function resetCards() {
+    document.getElementById('card-hospital').className = 'result-card';
+    document.getElementById('card-gestor').className   = 'result-card';
+    document.getElementById('badge-hospital').className = 'card-badge';
+    document.getElementById('badge-gestor').className   = 'card-badge';
+  }
+
+  function showError(msg) {
+    const err = `<div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-text" style="color:var(--red)">${msg}</div></div>`;
+    document.getElementById('body-hospital').innerHTML = err;
+    document.getElementById('body-gestor').innerHTML   = err;
+    document.getElementById('status-bar').classList.remove('visible');
+  }
+
+  function resetBtn() {
+    const btn = document.getElementById('btn-simular');
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+
+  // ── Status bar steps ───────────────────────────────────────
+  const STEPS = ['recv','poliza','preex','notif','done'];
+  let currentStep = -1;
+
+  function setStep(step) {
+    const idx = STEPS.indexOf(step);
+    if (idx <= currentStep) return;
+    currentStep = idx;
+    document.getElementById('status-bar').classList.add('visible');
+    STEPS.forEach((s, i) => {
+      const el = document.getElementById(`step-${s}`);
+      if (!el) return;
+      el.classList.remove('active','done');
+      if (i < idx) el.classList.add('done');
+      else if (i === idx) el.classList.add('active');
+    });
+  }
+
+  function startTimer() {
+    timer_start = Date.now();
+    currentStep = -1;
+    const label = document.getElementById('timer-label');
+    timer_interval = setInterval(() => {
+      label.textContent = ((Date.now() - timer_start) / 1000).toFixed(1) + 's';
+    }, 100);
+  }
+
+  function stopTimer() {
+    clearInterval(timer_interval);
+  }
+
+  // ── History ────────────────────────────────────────────────
+  function addHistory(res, cedula, motivo) {
+    const names = {
+      '1001234567': 'Carlos Mendoza',
+      '1002345678': 'Lucia Paredes',
+      '1003456789': 'Andrés Villacís',
+      '1004567890': 'María Suárez',
+      '1005678901': 'Roberto Cárdenas',
+      '1006789012': 'Gabriela Mora'
+    };
+    const item = {
+      id: res.evento_id,
+      nombre: names[cedula] || cedula,
+      motivo: motivo.substring(0, 40),
+      decision: res.decision,
+      ms: res.duracion_ms,
+      time: new Date().toLocaleTimeString('es-EC', {hour12:false}),
+      res
+    };
+    history_items.unshift(item);
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('history-list');
+    if (!history_items.length) {
+      list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:12px;text-align:center;">Sin eventos procesados aún.</div>';
+      return;
+    }
+    list.innerHTML = history_items.map((item, i) => `
+      <div class="history-item" onclick="replayResult(${i})">
+        <div class="history-decision ${item.decision}"></div>
+        <div class="history-info">
+          <div class="h-name">${item.nombre}</div>
+          <div class="h-motivo">${item.motivo}</div>
+        </div>
+        <div class="history-time">${item.time}</div>
+        <div class="history-ms">${item.ms}ms</div>
+      </div>
+    `).join('');
+  }
+
+  function replayResult(idx) {
+    const item = history_items[idx];
+    if (!item) return;
+    resetCards();
+    renderResultados(item.res, '', item.motivo);
+    document.getElementById('status-bar').classList.remove('visible');
+  }
+
+  function clearHistory() {
+    history_items = [];
+    renderHistory();
+    resetCards();
+    document.getElementById('body-hospital').innerHTML = `<div class="empty-state"><div class="empty-icon">🏥</div><div class="empty-text">Esperando evento de ingreso</div></div>`;
+    document.getElementById('body-gestor').innerHTML   = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Esperando decisión del agente</div></div>`;
+    document.getElementById('status-bar').classList.remove('visible');
+  }
+</script>
+</body>
+</html>
